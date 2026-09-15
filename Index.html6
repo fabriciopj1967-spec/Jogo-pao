@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1d102b">
+  <title>Pão Rush — Desafio da Padaria</title>
+  <style>
+    :root {
+      --bg: #11091b;
+      --panel: rgba(38, 20, 57, .92);
+      --panel-2: #2b173f;
+      --gold: #ffc857;
+      --orange: #ff8c42;
+      --pink: #ff5c8a;
+      --mint: #65e6c0;
+      --text: #fff8ed;
+      --muted: #c4b5cf;
+      --danger: #ff5f6d;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: radial-gradient(circle at 50% 0%, #3a1e57 0, var(--bg) 58%); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif; }
+    body { display: flex; align-items: center; justify-content: center; padding: 14px; }
+    button { font: inherit; border: 0; cursor: pointer; color: var(--text); }
+    .app { width: min(100%, 470px); }
+    .brand { display: flex; align-items: center; justify-content: space-between; padding: 4px 4px 12px; }
+    .brand h1 { margin: 0; font-size: 20px; letter-spacing: -.5px; }
+    .brand small { color: var(--muted); font-size: 11px; }
+    .top-actions { display: flex; gap: 7px; }
+    .icon-btn { width: 34px; height: 34px; border-radius: 12px; background: rgba(255,255,255,.1); font-size: 17px; transition: transform .15s, background .15s; }
+    .icon-btn:hover { transform: translateY(-2px); background: rgba(255,255,255,.2); }
+    .game-shell { position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,.15); border-radius: 26px; background: #241338; box-shadow: 0 25px 70px rgba(0,0,0,.4), inset 0 1px rgba(255,255,255,.12); }
+    canvas { display: block; width: 100%; height: auto; aspect-ratio: 3 / 5; touch-action: none; }
+    .hud { position: absolute; z-index: 2; inset: 12px 12px auto; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; pointer-events: none; }
+    .stat { padding: 8px 9px; border: 1px solid rgba(255,255,255,.12); border-radius: 14px; background: rgba(20, 9, 29, .6); backdrop-filter: blur(8px); text-align: center; }
+    .stat span { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .8px; }
+    .stat strong { display: block; margin-top: 1px; font-size: 18px; }
+    .stat:nth-child(2) strong { color: var(--gold); }
+    .stat:nth-child(3) strong { color: var(--mint); }
+    .progress-wrap { position: absolute; z-index: 2; left: 20px; right: 20px; bottom: 17px; height: 7px; overflow: hidden; border-radius: 9px; background: rgba(0,0,0,.35); pointer-events: none; }
+    .progress { width: 100%; height: 100%; transform-origin: left; background: linear-gradient(90deg, var(--pink), var(--gold), var(--mint)); border-radius: inherit; transition: transform .15s linear; }
+    .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px 0 0; }
+    .control { padding: 13px; border-radius: 17px; background: linear-gradient(135deg, #3d2256, #2a173d); border: 1px solid rgba(255,255,255,.1); box-shadow: 0 7px 18px rgba(0,0,0,.2); font-weight: 800; font-size: 16px; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+    .control:active { transform: scale(.97); background: #51306b; }
+    .help { margin: 12px 4px 0; color: var(--muted); text-align: center; font-size: 12px; line-height: 1.45; }
+    .overlay { position: absolute; z-index: 4; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(13, 5, 20, .72); backdrop-filter: blur(6px); }
+    .overlay.hidden { display: none; }
+    .card { width: min(100%, 330px); padding: 26px 22px; border: 1px solid rgba(255,255,255,.16); border-radius: 25px; background: linear-gradient(145deg, rgba(63, 32, 87, .98), rgba(29, 15, 43, .98)); text-align: center; box-shadow: 0 18px 55px rgba(0,0,0,.45); }
+    .emoji { font-size: 52px; line-height: 1; filter: drop-shadow(0 8px 8px rgba(0,0,0,.25)); }
+    .card h2 { margin: 12px 0 7px; font-size: 26px; }
+    .card p { margin: 0 auto 17px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .primary { width: 100%; padding: 13px 18px; border-radius: 15px; background: linear-gradient(135deg, var(--orange), var(--pink)); font-weight: 900; box-shadow: 0 8px 20px rgba(255,92,138,.28); }
+    .primary:hover { filter: brightness(1.1); }
+    .tips { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 18px 0 0; text-align: left; }
+    .tip { padding: 9px 8px; border-radius: 12px; background: rgba(255,255,255,.07); font-size: 10px; color: var(--muted); line-height: 1.3; }
+    .tip b { display: block; margin-bottom: 3px; color: var(--text); font-size: 15px; }
+    .results { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 16px 0; }
+    .result { padding: 10px; border-radius: 13px; background: rgba(255,255,255,.08); }
+    .result span { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; }
+    .result strong { font-size: 21px; color: var(--gold); }
+    .new-record { margin: -5px 0 12px; color: var(--mint); font-weight: 800; font-size: 12px; }
+    @media (max-height: 700px) { body { padding-top: 7px; padding-bottom: 7px; } .brand { padding-bottom: 7px; } .help { margin-top: 6px; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="brand">
+      <div><h1>🍞 Pão Rush</h1><small>Desafio da Padaria</small></div>
+      <div class="top-actions"><button class="icon-btn" id="soundBtn" aria-label="Ativar ou desativar som">🔊</button><button class="icon-btn" id="pauseBtn" aria-label="Pausar jogo">Ⅱ</button></div>
+    </header>
+    <section class="game-shell" aria-label="Jogo Pão Rush">
+      <canvas id="game" width="360" height="600"></canvas>
+      <div class="hud">
+        <div class="stat"><span>Tempo</span><strong id="time">60</strong></div>
+        <div class="stat"><span>Pontos</span><strong id="score">0</strong></div>
+        <div class="stat"><span>Nível</span><strong id="level">1</strong></div>
+      </div>
+      <div class="progress-wrap"><div class="progress" id="progress"></div></div>
+      <div class="overlay" id="startOverlay">
+        <div class="card">
+          <div class="emoji">👨‍🍳</div>
+          <h2>Hora do forno!</h2>
+          <p>Mexa a cesta e pegue os pães que estão caindo. Evite os queimados e faça o maior combo possível.</p>
+          <button class="primary" id="startBtn">Começar a partida</button>
+          <div class="tips"><div class="tip"><b>🍞 +10</b>Pão fresquinho</div><div class="tip"><b>✨ +50</b>Pão dourado</div><div class="tip"><b>🔥 -1 vida</b>Pão queimado</div></div>
+        </div>
+      </div>
+      <div class="overlay hidden" id="pauseOverlay">
+        <div class="card"><div class="emoji">⏸️</div><h2>Jogo pausado</h2><p>Seu balcão está seguro. Respire e volte quando estiver pronto.</p><button class="primary" id="resumeBtn">Continuar</button></div>
+      </div>
+      <div class="overlay hidden" id="gameOverOverlay">
+        <div class="card"><div class="emoji" id="endEmoji">🏆</div><h2 id="endTitle">Partida encerrada</h2><p id="endMessage">O forno fechou por hoje.</p><div class="results"><div class="result"><span>Pontuação</span><strong id="finalScore">0</strong></div><div class="result"><span>Recorde</span><strong id="bestScore">0</strong></div></div><div class="new-record" id="recordText"></div><button class="primary" id="againBtn">Jogar novamente</button></div>
+      </div>
+    </section>
+    <div class="controls"><button class="control" id="leftBtn">◀ Esquerda</button><button class="control" id="rightBtn">Direita ▶</button></div>
+    <p class="help">Use os botões, arraste a cesta ou use as setas do teclado. Pegue ✨ para ganhar tempo extra!</p>
+  </main>
+
+  <script>
+    (() => {
+      'use strict';
+      const canvas = document.getElementById('game');
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width, H = canvas.height;
+      const $ = id => document.getElementById(id);
+      const ui = { time: $('time'), score: $('score'), level: $('level'), progress: $('progress'), start: $('startOverlay'), pause: $('pauseOverlay'), over: $('gameOverOverlay'), final: $('finalScore'), best: $('bestScore'), record: $('recordText'), title: $('endTitle'), message: $('endMessage'), emoji: $('endEmoji') };
+      let animationId = 0, last = 0, spawnClock = 0, soundOn = true, dragging = false;
+      let state = { running: false, paused: false, time: 60, score: 0, lives: 3, level: 1, combo: 0, best: Number(localStorage.getItem('paoRushBest') || 0) };
+      const player = { x: W / 2, y: H - 64, w: 88, h: 34, speed: 300 };
+      let items = [], particles = [], stars = Array.from({length: 34}, () => ({ x: Math.random()*W, y: 60+Math.random()*H*.72, r: Math.random()*1.8+.3, a: Math.random()*.5+.2 }));
+
+      function beep(freq, duration=.08, type='sine') {
+        if (!soundOn) return;
+        try { const ac = beep.ac || (beep.ac = new (window.AudioContext || window.webkitAudioContext)()); const o = ac.createOscillator(), g = ac.createGain(); o.type = type; o.frequency.value = freq; g.gain.setValueAtTime(.035, ac.currentTime); g.gain.exponentialRampToValueAtTime(.001, ac.currentTime + duration); o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime + duration); } catch(e) {}
+      }
+      function reset() { state = { running: true, paused: false, time: 60, score: 0, lives: 3, level: 1, combo: 0, best: Number(localStorage.getItem('paoRushBest') || 0) }; player.x = W/2; items = []; particles = []; spawnClock = 0; ui.start.classList.add('hidden'); ui.over.classList.add('hidden'); ui.pause.classList.add('hidden'); last = performance.now(); beep(520,.12,'triangle'); requestAnimationFrame(loop); }
+      function updateHUD() { ui.time.textContent = Math.max(0, Math.ceil(state.time)); ui.score.textContent = state.score; ui.level.textContent = state.level; ui.progress.style.transform = `scaleX(${Math.max(0, state.time/60)})`; }
+      function spawn() {
+        const roll = Math.random();
+        let type = roll < .14 ? 'burnt' : roll < .24 ? 'gold' : roll < .29 ? 'clock' : 'bread';
+        items.push({ type, x: 24 + Math.random()*(W-48), y: 70, r: type==='clock'?17:18, speed: 92 + state.level*16 + Math.random()*45, rot: Math.random()*Math.PI, spin: (Math.random()-.5)*3 });
+      }
+      function addParticles(x,y,color,count=10) { for(let i=0;i<count;i++) particles.push({x,y,vx:(Math.random()-.5)*150,vy:(Math.random()-.8)*150,life:.55+Math.random()*.45,max:.9,color,size:2+Math.random()*4}); }
+      function collect(item) {
+        const good = item.type !== 'burnt';
+        if (item.type === 'bread') { state.combo++; state.score += 10 + Math.min(30, state.combo*2); beep(480 + Math.min(240,state.combo*12), .06); addParticles(item.x,item.y,'#ffc857',8); }
+        if (item.type === 'gold') { state.combo++; state.score += 50; state.time = Math.min(60, state.time + 3); beep(880,.13,'triangle'); addParticles(item.x,item.y,'#ffe083',18); }
+        if (item.type === 'clock') { state.combo++; state.score += 25; state.time = Math.min(60, state.time + 7); beep(700,.14,'sine'); addParticles(item.x,item.y,'#65e6c0',16); }
+        if (item.type === 'burnt') { state.lives--; state.combo = 0; beep(130,.18,'sawtooth'); addParticles(item.x,item.y,'#ff5f6d',14); if(state.lives<=0) endGame('Sem vidas', 'Alguns pães passaram do ponto.'); }
+        if (good && state.score >= state.level*120) { state.level++; beep(720,.12,'square'); addParticles(W/2,125,'#65e6c0',20); }
+      }
+      function endGame(title='Tempo esgotado!', msg='O forno fechou, mas sua pontuação ficou registrada.') {
+        if (!state.running) return;
+        state.running = false; state.paused = false; cancelAnimationFrame(animationId);
+        const record = state.score > state.best; if(record) { state.best = state.score; localStorage.setItem('paoRushBest', state.best); }
+        ui.title.textContent = title; ui.message.textContent = msg; ui.final.textContent = state.score; ui.best.textContent = state.best; ui.record.textContent = record ? '🎉 Novo recorde da padaria!' : 'Continue treinando para bater o recorde!'; ui.emoji.textContent = record ? '🏆' : (state.score > 250 ? '👏' : '🥐'); ui.over.classList.remove('hidden'); beep(record ? 1000 : 220, .2, 'triangle');
+      }
+      function togglePause() { if(!state.running) return; state.paused = !state.paused; ui.pause.classList.toggle('hidden', !state.paused); if(!state.paused) { last=performance.now(); requestAnimationFrame(loop); } }
+      function move(dir, dt=.08) { player.x += dir * player.speed * dt; player.x = Math.max(player.w/2+5, Math.min(W-player.w/2-5, player.x)); }
+      function update(dt) {
+        state.time -= dt; if(state.time<=0) { state.time=0; updateHUD(); endGame(); return; }
+        state.level = Math.max(1, Math.floor(state.score/120)+1);
+        spawnClock += dt; const gap = Math.max(.28, .82 - state.level*.045); if(spawnClock > gap) { spawnClock=0; spawn(); if(Math.random()<Math.min(.35, state.level*.025)) spawn(); }
+        for(let i=items.length-1;i>=0;i--) { const it=items[i]; it.y += it.speed*dt; it.rot += it.spin*dt; const hit = it.y+it.r > player.y-player.h/2 && it.y-it.r < player.y+player.h/2 && Math.abs(it.x-player.x) < player.w/2+it.r*.6; if(hit) { collect(it); items.splice(i,1); continue; } if(it.y>H+30) { if(it.type==='bread'||it.type==='gold') state.combo=0; items.splice(i,1); } }
+        for(let i=particles.length-1;i>=0;i--) { const p=particles[i]; p.life-=dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=170*dt; if(p.life<=0) particles.splice(i,1); }
+        updateHUD();
+      }
+      function roundRect(x,y,w,h,r,fill,stroke) { ctx.beginPath(); ctx.roundRect(x,y,w,h,r); if(fill){ctx.fillStyle=fill;ctx.fill();} if(stroke){ctx.strokeStyle=stroke;ctx.stroke();} }
+      function drawBackground(t) {
+        const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#1a0d2a'); g.addColorStop(.52,'#2c1641'); g.addColorStop(1,'#12091d'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+        ctx.fillStyle='rgba(255,200,87,.07)'; ctx.beginPath(); ctx.arc(W/2,150,160,0,Math.PI*2); ctx.fill();
+        stars.forEach(s=>{ctx.globalAlpha=s.a*(.7+.3*Math.sin(t/900+s.x));ctx.fillStyle='#fff3c9';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();}); ctx.globalAlpha=1;
+        for(let y=170;y<H-100;y+=105){ ctx.fillStyle='rgba(255,255,255,.045)';ctx.fillRect(0,y,W,5); for(let x=16;x<W;x+=58){ ctx.fillStyle='rgba(255,255,255,.035)';ctx.fillRect(x,y-45,42,45); } }
+        ctx.fillStyle='#180c25'; ctx.fillRect(0,H-86,W,86); ctx.fillStyle='#45245b'; ctx.fillRect(0,H-90,W,8);
+      }
+      function drawItem(it) {
+        ctx.save(); ctx.translate(it.x,it.y); ctx.rotate(it.rot);
+        if(it.type==='burnt'){ ctx.shadowColor='rgba(0,0,0,.35)';ctx.shadowBlur=10;ctx.fillStyle='#6b3d2c';ctx.beginPath();ctx.ellipse(0,0,20,14,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#29151a';ctx.beginPath();ctx.ellipse(-6,-2,5,3,0,0,Math.PI*2);ctx.ellipse(7,3,4,2,0,0,Math.PI*2);ctx.fill(); }
+        else if(it.type==='gold'||it.type==='clock'){ ctx.shadowColor=it.type==='gold'?'#ffc857':'#65e6c0';ctx.shadowBlur=18;ctx.fillStyle=it.type==='gold'?'#ffc857':'#65e6c0';ctx.beginPath();ctx.arc(0,0,18,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#351743';ctx.font='bold 19px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(it.type==='gold'?'★':'⏱',0,1); }
+        else { ctx.shadowColor='rgba(255,174,77,.45)';ctx.shadowBlur=12;ctx.fillStyle='#f0a34b';ctx.beginPath();ctx.ellipse(0,0,21,14,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ffd27b';ctx.beginPath();ctx.ellipse(0,-2,17,10,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#d47b35';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-9,-4);ctx.quadraticCurveTo(-5,4,-1,7);ctx.moveTo(1,-7);ctx.quadraticCurveTo(5,1,9,5);ctx.stroke(); }
+        ctx.restore();
+      }
+      function drawPlayer() {
+        ctx.save(); ctx.translate(player.x,player.y); ctx.shadowColor='rgba(0,0,0,.35)';ctx.shadowBlur=12; roundRect(-player.w/2,-player.h/2,player.w,player.h,12,'#d96b3e'); ctx.shadowBlur=0; roundRect(-player.w/2+5,-player.h/2+5,player.w-10,player.h-10,9,'#f7b24c'); ctx.strokeStyle='#ffdb79';ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,-5,25,Math.PI,0);ctx.stroke();ctx.fillStyle='#633044';ctx.beginPath();ctx.arc(-20,5,3,0,Math.PI*2);ctx.arc(0,7,3,0,Math.PI*2);ctx.arc(20,5,3,0,Math.PI*2);ctx.fill(); ctx.restore();
+        if(state.combo>=3){ ctx.fillStyle='#fff4c4';ctx.font='bold 13px system-ui';ctx.textAlign='center';ctx.fillText('COMBO x'+state.combo,player.x,player.y-31); }
+        for(let i=0;i<3;i++){ ctx.font='18px system-ui';ctx.globalAlpha=i<state.lives?1:.22;ctx.fillText('❤️',20+i*25,H-35); } ctx.globalAlpha=1;
+      }
+      function drawParticles(){ particles.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();});ctx.globalAlpha=1; }
+      function draw(t) { drawBackground(t); items.forEach(drawItem); drawParticles(); drawPlayer(); }
+      function loop(now) { if(!state.running || state.paused) return; const dt=Math.min(.033,(now-last)/1000||0); last=now; update(dt); draw(now); if(state.running) animationId=requestAnimationFrame(loop); }
+      function setMove(dir) { move(dir,.12); }
+      $('startBtn').addEventListener('click', reset); $('againBtn').addEventListener('click', reset); $('resumeBtn').addEventListener('click', togglePause); $('pauseBtn').addEventListener('click', togglePause);
+      $('soundBtn').addEventListener('click',()=>{soundOn=!soundOn;$('soundBtn').textContent=soundOn?'🔊':'🔇';});
+      $('leftBtn').addEventListener('pointerdown',()=>setMove(-1)); $('rightBtn').addEventListener('pointerdown',()=>setMove(1));
+      window.addEventListener('keydown', e=>{ if(e.key==='ArrowLeft'||e.key.toLowerCase()==='a'){e.preventDefault();move(-1,.12);} if(e.key==='ArrowRight'||e.key.toLowerCase()==='d'){e.preventDefault();move(1,.12);} if(e.key===' '){e.preventDefault();togglePause();} });
+      canvas.addEventListener('pointerdown', e=>{dragging=true; canvas.setPointerCapture(e.pointerId); drag(e);}); canvas.addEventListener('pointermove', e=>{if(dragging)drag(e);}); canvas.addEventListener('pointerup',()=>dragging=false); canvas.addEventListener('pointercancel',()=>dragging=false);
+      function drag(e){ const rect=canvas.getBoundingClientRect(); player.x=(e.clientX-rect.left)*W/rect.width; player.x=Math.max(player.w/2+5,Math.min(W-player.w/2-5,player.x)); }
+      draw(0); updateHUD();
+    })();
+  </script>
+</body>
+</html>
